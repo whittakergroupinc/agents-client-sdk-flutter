@@ -126,63 +126,6 @@ final class AgentBase implements Agent {
     _log('User mic unmuted');
   }
 
-  Future<bool> _createAudioSession() async {
-    await audioSessionManager.initialize();
-    interruptionSubscription =
-        audioSessionManager.interruptionStream.listen((event) {
-      callbackConfig.onAudioSessionInterruption?.call(event);
-    });
-    devicesSubscription =
-        audioSessionManager.devicesChangedStream.listen((event) {
-      callbackConfig.onAudioDevicesChanged?.call(event);
-    });
-    return audioSessionManager.startSession();
-  }
-
-  Future<void> _initializeAudioPlayer() async {
-    player.onEmptyQueue = _sendBufferEmptyEvent;
-    await player.initialize();
-    // Listen to player states to detect agent's start/stop speaking
-    playerSubscription = player.playingStream.listen((isPlaying) {
-      if (!isConnected) return;
-
-      // onAgentStartedSpeaking
-      if (isPlaying && !isAgentSpeaking) {
-        isAgentSpeakingNotifier.value = true;
-        _log('Agent started speaking (playing audio)');
-        callbackConfig.onAgentStartedSpeaking?.call();
-      }
-
-      // onAgentStoppedSpeaking
-      if (!isPlaying && isAgentSpeaking) {
-        isAgentSpeakingNotifier.value = false;
-        _log('Agent stopped speaking');
-        callbackConfig.onAgentStoppedSpeaking?.call();
-      }
-    });
-    return;
-  }
-
-  Future<void> _connectWebSocket() async {
-    assert(ws == null, 'WebSocket already connected!');
-    _log('Connecting WebSocket to the agent...');
-    final wsUrl = Uri.parse(
-      'wss://staging.api.play.ai'
-      // 'ws://localhost:4400'
-      '/v1/agents/$agentId/start-conversation',
-    );
-    try {
-      ws = IOWebSocketChannel.connect(
-        wsUrl,
-        pingInterval: const Duration(seconds: 10),
-      );
-      _log('WebSocket connected');
-    } catch (e) {
-      _log('Failed to connect WebSocket: $e');
-      rethrow;
-    }
-  }
-
   @override
   Future<void> connect() async {
     if (state != AgentState.idle) {
@@ -290,6 +233,67 @@ final class AgentBase implements Agent {
   }
 
   // ------------------------------------------------------------
+  // Audio Session, Player, & WebSocket
+  // ------------------------------------------------------------
+
+  Future<bool> _createAudioSession() async {
+    await audioSessionManager.initialize();
+    interruptionSubscription =
+        audioSessionManager.interruptionStream.listen((event) {
+      callbackConfig.onAudioSessionInterruption?.call(event);
+    });
+    devicesSubscription =
+        audioSessionManager.devicesChangedStream.listen((event) {
+      callbackConfig.onAudioDevicesChanged?.call(event);
+    });
+    return audioSessionManager.startSession();
+  }
+
+  Future<void> _initializeAudioPlayer() async {
+    player.onEmptyQueue = _sendBufferEmptyEvent;
+    await player.initialize();
+    // Listen to player states to detect agent's start/stop speaking
+    playerSubscription = player.playingStream.listen((isPlaying) {
+      if (!isConnected) return;
+
+      // onAgentStartedSpeaking
+      if (isPlaying && !isAgentSpeaking) {
+        isAgentSpeakingNotifier.value = true;
+        _log('Agent started speaking (playing audio)');
+        callbackConfig.onAgentStartedSpeaking?.call();
+      }
+
+      // onAgentStoppedSpeaking
+      if (!isPlaying && isAgentSpeaking) {
+        isAgentSpeakingNotifier.value = false;
+        _log('Agent stopped speaking');
+        callbackConfig.onAgentStoppedSpeaking?.call();
+      }
+    });
+    return;
+  }
+
+  Future<void> _connectWebSocket() async {
+    assert(ws == null, 'WebSocket already connected!');
+    _log('Connecting WebSocket to the agent...');
+    final wsUrl = Uri.parse(
+      'wss://staging.api.play.ai'
+      // 'ws://localhost:4400'
+      '/v1/agents/$agentId/start-conversation',
+    );
+    try {
+      ws = IOWebSocketChannel.connect(
+        wsUrl,
+        pingInterval: const Duration(seconds: 10),
+      );
+      _log('WebSocket connected');
+    } catch (e) {
+      _log('Failed to connect WebSocket: $e');
+      rethrow;
+    }
+  }
+
+  // ------------------------------------------------------------
   // VAD
   // ------------------------------------------------------------
 
@@ -378,7 +382,7 @@ final class AgentBase implements Agent {
   }
 
   // ------------------------------------------------------------
-  // HANDLING SERVER EVENTS
+  // Handling Server Events
   // ------------------------------------------------------------
 
   void _subscribeToServerEvents() {
@@ -516,7 +520,7 @@ final class AgentBase implements Agent {
   }
 
   // ------------------------------------------------------------
-  // SENDING EVENTS
+  // Sending Events from the Client to the Agent
   // ------------------------------------------------------------
 
   /// Sends {type:'setup'} to the agent.
