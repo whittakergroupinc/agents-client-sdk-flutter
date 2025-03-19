@@ -3,32 +3,32 @@ import 'dart:convert' hide Codec;
 
 import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:vad/vad.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../../audio_player/audio_player.dart';
 import '../../audio_session_manager/audio_session_manager.dart';
 import '../../exceptions/exceptions.dart';
-import '../../recorder/recorder.dart';
-import '../../vad/vad.dart';
-import '../../vad/vad_handler_non_web.dart';
 import '../agent.dart';
 
 final class AgentBase implements Agent {
   AgentBase({
+    required this.baseUrl,
     required this.agentId,
     required this.prompt,
     required this.actions,
     required AudioSessionManagerBase? audioSessionManager,
     required this.callbackConfig,
-    required RecorderBase? recorder,
     required AudioPlayerBase? player,
   }) {
     _audioSessionManager = audioSessionManager;
     _player = player;
-    _recorder = recorder;
     _createVadHandler();
   }
+
+  @override
+  final String baseUrl;
 
   @override
   final String agentId;
@@ -54,16 +54,7 @@ final class AgentBase implements Agent {
   late final AudioSessionManagerBase? _audioSessionManager;
 
   @override
-  late final recorder = _recorder ??
-      AudioRecorder(
-        onFrameRecorded: callbackConfig.onAudioStreamerFrameRecorded,
-      );
-  late final RecorderBase? _recorder;
-
-  @override
-  late final vadHandler = kIsWeb
-      ? VadHandler.create(isDebug: callbackConfig.debug)
-      : VadHandlerNonWeb(isDebug: callbackConfig.debug, recorder: recorder);
+  late final vadHandler = VadHandler.create(isDebug: callbackConfig.debug);
   Timer? _vadPauseTimer;
 
   @override
@@ -187,7 +178,6 @@ final class AgentBase implements Agent {
 
       _vadPauseTimer?.cancel();
       vadHandler.stopListening();
-      await recorder.stopStream();
     } catch (e) {
       _log('Error during reset: $e');
     } finally {
@@ -223,7 +213,6 @@ final class AgentBase implements Agent {
 
     // Dispose of controllers
     if (_player == null) await player.dispose();
-    if (_recorder == null) await recorder.dispose();
     vadHandler.dispose();
 
     // Dispose of notifiers
@@ -278,11 +267,7 @@ final class AgentBase implements Agent {
   Future<void> _connectWebSocket() async {
     assert(ws == null, 'WebSocket already connected!');
     _log('Connecting WebSocket to the agent...');
-    final wsUrl = Uri.parse(
-      'wss://staging.api.play.ai'
-      // 'ws://localhost:4400'
-      '/v1/agents/$agentId/start-conversation',
-    );
+    final wsUrl = Uri.parse('$baseUrl/v1/agents/$agentId/start-conversation');
     try {
       ws = IOWebSocketChannel.connect(
         wsUrl,

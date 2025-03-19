@@ -23,7 +23,7 @@ dependencies:
   logger: ^2.5.0
   onnxruntime: ^1.4.1
   permission_handler: ^11.4.0
-  record: ^5.2.1
+  vad: ^0.0.5
   web_socket_channel: ^3.0.2
 
 dev_dependencies:

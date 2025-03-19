@@ -1,11 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:vad/vad.dart';
 
 import '../../audio_player/audio_player.dart';
 import '../../audio_session_manager/audio_session_manager.dart';
-import '../../recorder/recorder.dart';
-import '../../vad/vad.dart';
 import '../agent_impl/agent_impl.dart';
 
 part 'agent_action.dart';
@@ -15,31 +14,31 @@ part 'enums.dart';
 
 abstract interface class Agent {
   factory Agent({
+    String baseUrl = 'wss://api.play.ai',
     required String agentId,
     String prompt = 'You are a helpful assistant.',
     List<AgentAction> actions = const [],
     AudioSessionManagerBase? audioSessionManager,
-    RecorderBase? recorder,
     AudioPlayerBase? player,
     AgentCallbackConfig callbackConfig = const AgentCallbackConfig(),
   }) =>
       AgentBase(
+        baseUrl: baseUrl,
         agentId: agentId,
         prompt: prompt,
         actions: actions,
         audioSessionManager:
             audioSessionManager ?? AudioSessionManager.defaultConfig(),
         callbackConfig: callbackConfig,
-        recorder: recorder,
         player: player,
       );
 
+  String get baseUrl;
   String get agentId;
   AgentCallbackConfig get callbackConfig;
   String get prompt;
   List<AgentAction> get actions;
 
-  RecorderBase get recorder;
   AudioPlayerBase get player;
   VadHandlerBase get vadHandler;
   AudioSessionManagerBase get audioSessionManager;
