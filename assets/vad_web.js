@@ -71,25 +71,6 @@ function stopListeningImpl() {
   }
 }
 
-function pauseListeningImpl() {
-  if (vadInstance) {
-    vadInstance.pause();
-    isListening = false;
-  } else {
-    onErrorCallback("VAD instance is not initialized");
-  }
-}
-
-function resumeListeningImpl() {
-  if (vadInstance) {
-    // Resume using start() as per MicVAD implementation
-    vadInstance.start();
-    isListening = true;
-  } else {
-    onErrorCallback("VAD instance is not initialized");
-  }
-}
-
 function isListeningNow() {
   return isListening;
 }

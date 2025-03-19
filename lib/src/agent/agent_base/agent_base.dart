@@ -1,11 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:vad/vad.dart';
 
 import '../../audio_player/audio_player.dart';
 import '../../audio_session_manager/audio_session_manager.dart';
 import '../../recorder/recorder.dart';
+import '../../vad/vad.dart';
 import '../agent_impl/agent_impl.dart';
 
 part 'agent_action.dart';

@@ -1,13 +1,9 @@
-// VAD iterator for non-web platforms
-// Adapted from https://github.com/keyur2maru/vad/blob/master/lib/src/vad_iterator_non_web.dart
-
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:onnxruntime/onnxruntime.dart';
 
-import '../vad_handler/vad_handler_base.dart';
 import 'vad_event.dart';
 import 'vad_iterator_base.dart';
 
@@ -58,8 +54,10 @@ class VadIteratorNonWeb implements VadIteratorBase {
   /// Flag to submit user speech on pause/stop event.
   bool submitUserSpeechOnPause = false;
 
-  /// Model
-  SileroVADModel model;
+  /// Model name
+  /// * 'legacy' for Silero VAD Legacy model
+  /// * 'v5' for Silero VAD v5 model
+  String model;
 
   // Internal variables
   /// Flag to indicate speech detection state.
@@ -220,11 +218,10 @@ class VadIteratorNonWeb implements VadIteratorBase {
 
   /// Run model inference based on the selected model version
   Future<(double, List<OrtValue?>)> _runModelInference(Float32List data) async {
-    switch (model) {
-      case SileroVADModel.v4:
-        return _runLegacyModelInference(data);
-      case SileroVADModel.v5:
-        return _runV5ModelInference(data);
+    if (model == 'v5') {
+      return _runV5ModelInference(data);
+    } else {
+      return _runLegacyModelInference(data);
     }
   }
 
@@ -446,7 +443,7 @@ VadIteratorBase createVadIterator({
   required int preSpeechPadFrames,
   required int minSpeechFrames,
   required bool submitUserSpeechOnPause,
-  required SileroVADModel model,
+  required String model,
 }) {
   return VadIteratorNonWeb(
     isDebug: isDebug,

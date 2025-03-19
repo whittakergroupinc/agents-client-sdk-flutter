@@ -1,16 +1,14 @@
-// iOS and Android implementation of VAD handler
-// Adapted from https://github.com/keyur2maru/vad/blob/master/lib/src/vad_handler_non_web.dart
+// vad_handler_non_web.dart
 
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 
-import '../../recorder/default_recorder.dart';
-import '../../recorder/recorder_base.dart';
-import '../vad_iterator/vad_event.dart';
-import '../vad_iterator/vad_iterator.dart';
-import '../vad_iterator/vad_iterator_base.dart';
+import '../recorder/recorder.dart';
+import 'vad_event.dart';
 import 'vad_handler_base.dart';
+import 'vad_iterator.dart' show VadIterator;
+import 'vad_iterator_base.dart';
 
 /// VadHandlerNonWeb class
 class VadHandlerNonWeb implements VadHandlerBase {
@@ -18,11 +16,13 @@ class VadHandlerNonWeb implements VadHandlerBase {
   VadHandlerNonWeb({
     required this.isDebug,
     this.recorder,
+    this.modelPath = '',
   });
 
-  /// Recorder
+  /// Audio streamer.
+  ///
+  /// This is not automatically disposed.
   final RecorderBase? recorder;
-
   late final RecorderBase _recorder = recorder ?? AudioRecorder();
 
   /// VAD iterator
@@ -30,6 +30,9 @@ class VadHandlerNonWeb implements VadHandlerBase {
 
   /// Audio stream subscription
   StreamSubscription<List<int>>? _audioStreamSubscription;
+
+  /// Path to the model file
+  String modelPath;
 
   /// Debug flag
   bool isDebug = false;
@@ -118,7 +121,9 @@ class VadHandlerNonWeb implements VadHandlerBase {
     int frameSamples = 1536,
     int minSpeechFrames = 3,
     bool submitUserSpeechOnPause = false,
-    SileroVADModel model = SileroVADModel.v4,
+    String model = 'legacy',
+    String baseAssetPath = 'assets/packages/agents/assets/',
+    String onnxWASMBasePath = 'assets/packages/agents/assets/',
   }) async {
     if (!_isInitialized) {
       _vadIterator = VadIterator.create(
@@ -133,10 +138,13 @@ class VadHandlerNonWeb implements VadHandlerBase {
         submitUserSpeechOnPause: submitUserSpeechOnPause,
         model: model,
       );
-      final modelPath = switch (model) {
-        SileroVADModel.v5 => vadV5ModelPath,
-        SileroVADModel.v4 => vadLegacyModelPath,
-      };
+      if (modelPath.isEmpty) {
+        if (model == 'v5') {
+          modelPath = vadV5ModelPath;
+        } else {
+          modelPath = vadLegacyModelPath;
+        }
+      }
       await _vadIterator.initModel(modelPath);
       _vadIterator.setVadEventCallback(_handleVadEvent);
       _submitUserSpeechOnPause = submitUserSpeechOnPause;
@@ -164,7 +172,7 @@ class VadHandlerNonWeb implements VadHandlerBase {
       (data) async {
         await _vadIterator.processAudioData(data);
       },
-      onError: (Object? e, StackTrace? st) {
+      onError: (Object? e, st) {
         _onErrorController.add('AudioStreamer error: $e');
         if (isDebug) debugPrint('Error processing audio data: $e');
       },
@@ -191,35 +199,6 @@ class VadHandlerNonWeb implements VadHandlerBase {
   }
 
   @override
-  Future<void> pauseListening() async {
-    if (isDebug) debugPrint('pauseListening');
-    try {
-      // Handle forced speech end if needed
-      if (_submitUserSpeechOnPause) {
-        _vadIterator.forceEndSpeech();
-      }
-
-      _audioStreamSubscription?.pause();
-      await _recorder.pauseStream();
-    } catch (e) {
-      _onErrorController.add(e.toString());
-      if (isDebug) debugPrint('Error pausing audio stream: $e');
-    }
-  }
-
-  @override
-  Future<void> resumeListening() async {
-    if (isDebug) debugPrint('resumeListening');
-    try {
-      _audioStreamSubscription?.resume();
-      await _recorder.resumeStream();
-    } catch (e) {
-      _onErrorController.add(e.toString());
-      if (isDebug) debugPrint('Error resuming audio stream: $e');
-    }
-  }
-
-  @override
   void dispose() {
     if (isDebug) debugPrint('VadHandlerNonWeb: dispose');
     stopListening();
@@ -230,21 +209,13 @@ class VadHandlerNonWeb implements VadHandlerBase {
     _onRealSpeechStartController.close();
     _onVADMisfireController.close();
     _onErrorController.close();
-    if (recorder == null) _recorder.dispose();
   }
 }
 
-/// Create a VAD handler for the iOS and Android.
-///
-/// Parameters:
-/// - isDebug: Whether to print debug messages.
-/// - recorder: The recorder to use.
-/// - modelPath: The path to the model file.
+/// Create a new VAD handler
 VadHandlerBase createVadHandler({
   required bool isDebug,
-  RecorderBase? recorder,
-}) =>
-    VadHandlerNonWeb(
-      isDebug: isDebug,
-      recorder: recorder,
-    );
+  String modelPath = '',
+}) {
+  return VadHandlerNonWeb(isDebug: isDebug, modelPath: modelPath);
+}

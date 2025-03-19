@@ -1,13 +1,9 @@
-// VAD iterator for web
-// Adapted from https://github.com/keyur2maru/vad/blob/master/lib/src/vad_iterator_web.dart
-
-import '../vad.dart';
 import 'vad_iterator_base.dart';
 
-/// VadIteratorWeb class.
-///
-/// Do not use this class directly.
-/// Use [VadIterator.create] instead.
+/// VadIteratorWeb class
+/// DO NOT USE
+/// Not implemented for web, since Web uses JavaScript library for VAD
+/// Only added for compatibility with non-web platforms
 class VadIteratorWeb implements VadIteratorBase {
   @override
   void forceEndSpeech() {
@@ -40,9 +36,7 @@ class VadIteratorWeb implements VadIteratorBase {
   }
 }
 
-/// Create VadHandlerNonWeb instance.
-///
-/// None of the parameters are used in the web implementation.
+/// Create VadHandlerNonWeb instance
 VadIteratorBase createVadIterator({
   required bool isDebug,
   required int sampleRate,
@@ -53,7 +47,7 @@ VadIteratorBase createVadIterator({
   required int preSpeechPadFrames,
   required int minSpeechFrames,
   required bool submitUserSpeechOnPause,
-  required SileroVADModel model,
+  required String model,
 }) {
   return VadIteratorWeb();
 }

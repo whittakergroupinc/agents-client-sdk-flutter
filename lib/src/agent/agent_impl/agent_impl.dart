@@ -3,7 +3,6 @@ import 'dart:convert' hide Codec;
 
 import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:vad/vad.dart' show VadHandler;
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -11,6 +10,8 @@ import '../../audio_player/audio_player.dart';
 import '../../audio_session_manager/audio_session_manager.dart';
 import '../../exceptions/exceptions.dart';
 import '../../recorder/recorder.dart';
+import '../../vad/vad.dart';
+import '../../vad/vad_handler_non_web.dart';
 import '../agent.dart';
 
 final class AgentBase implements Agent {
@@ -60,7 +61,9 @@ final class AgentBase implements Agent {
   late final RecorderBase? _recorder;
 
   @override
-  late final vadHandler = VadHandler.create(isDebug: false);
+  late final vadHandler = kIsWeb
+      ? VadHandler.create(isDebug: callbackConfig.debug)
+      : VadHandlerNonWeb(isDebug: callbackConfig.debug, recorder: recorder);
   Timer? _vadPauseTimer;
 
   @override

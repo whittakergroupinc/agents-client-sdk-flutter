@@ -18,13 +18,4 @@ export 'src/audio_session_manager/audio_session_manager.dart'
         AudioSessionManagerBase;
 export 'src/exceptions/exceptions.dart';
 export 'src/recorder/recorder.dart' show AudioRecorder, RecorderBase;
-export 'src/vad/vad.dart'
-    show
-        SileroVADModel,
-        SpeechProbabilities,
-        VadEvent,
-        VadEventCallback,
-        VadEventType,
-        VadHandler,
-        VadHandlerBase,
-        VadIterator;
+export 'src/vad/vad.dart';

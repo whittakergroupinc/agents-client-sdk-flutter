@@ -1,7 +1,3 @@
-// VAD iterator
-// Adapted from https://github.com/keyur2maru/vad/blob/master/lib/src/vad_iterator.dart
-
-import '../vad_handler/vad_handler_base.dart';
 import 'vad_iterator_base.dart';
 import 'vad_iterator_web.dart' if (dart.library.io) 'vad_iterator_non_web.dart'
     as implementation;
@@ -19,7 +15,7 @@ class VadIterator {
     required int preSpeechPadFrames,
     required int minSpeechFrames,
     required bool submitUserSpeechOnPause,
-    required SileroVADModel model,
+    required String model,
   }) {
     return implementation.createVadIterator(
       isDebug: isDebug,

@@ -1,5 +1,4 @@
-// Web implementation of VAD handler
-// Adapted from https://github.com/keyur2maru/vad/blob/master/lib/src/vad_handler_web.dart
+// vad_handler_web.dart
 
 import 'dart:async';
 import 'dart:convert';
@@ -8,7 +7,6 @@ import 'dart:js_interop_unsafe';
 
 import 'package:flutter/foundation.dart';
 
-import '../../recorder/recorder_base.dart';
 import 'vad_handler_base.dart';
 
 /// Start listening for voice activity detection (JS-binding)
@@ -29,14 +27,6 @@ external void startListeningImpl(
 /// Stop listening for voice activity detection (JS-binding)
 @JS('stopListeningImpl')
 external void stopListeningImpl();
-
-/// Pause listening for voice activity detection (JS-binding)
-@JS('pauseListeningImpl')
-external void pauseListeningImpl();
-
-/// Resume listening for voice activity detection (JS-binding)
-@JS('resumeListeningImpl')
-external void resumeListeningImpl();
 
 /// Check if the VAD is currently listening (JS-binding)
 @JS('isListeningNow')
@@ -107,20 +97,23 @@ class VadHandlerWeb implements VadHandlerBase {
     int frameSamples = 1536,
     int minSpeechFrames = 3,
     bool submitUserSpeechOnPause = false,
-    SileroVADModel model = SileroVADModel.v4,
+    String model = 'legacy',
+    String baseAssetPath = 'assets/packages/agents/assets/',
+    String onnxWASMBasePath = 'assets/packages/agents/assets/',
   }) {
     if (isDebug) {
       debugPrint(
-        'VadHandlerWeb: startListening: Calling startListeningImpl with parameters: '
-        'positiveSpeechThreshold: $positiveSpeechThreshold, '
-        'negativeSpeechThreshold: $negativeSpeechThreshold, '
-        'preSpeechPadFrames: $preSpeechPadFrames, '
-        'redemptionFrames: $redemptionFrames, '
-        'frameSamples: $frameSamples, '
-        'minSpeechFrames: $minSpeechFrames, '
-        'submitUserSpeechOnPause: $submitUserSpeechOnPause'
-        'model: $model',
-      );
+          'VadHandlerWeb: startListening: Calling startListeningImpl with parameters: '
+          'positiveSpeechThreshold: $positiveSpeechThreshold, '
+          'negativeSpeechThreshold: $negativeSpeechThreshold, '
+          'preSpeechPadFrames: $preSpeechPadFrames, '
+          'redemptionFrames: $redemptionFrames, '
+          'frameSamples: $frameSamples, '
+          'minSpeechFrames: $minSpeechFrames, '
+          'submitUserSpeechOnPause: $submitUserSpeechOnPause'
+          'model: $model'
+          'baseAssetPath: $baseAssetPath'
+          'onnxWASMBasePath: $onnxWASMBasePath');
     }
     startListeningImpl(
       positiveSpeechThreshold,
@@ -130,21 +123,18 @@ class VadHandlerWeb implements VadHandlerBase {
       frameSamples,
       minSpeechFrames,
       submitUserSpeechOnPause,
-      switch (model) {
-        SileroVADModel.v4 => 'legacy',
-        SileroVADModel.v5 => 'v5',
-      },
-      VadHandlerBase.defaultBaseAssetPath,
-      VadHandlerBase.defaultOnnxWASMBasePath,
+      model,
+      baseAssetPath,
+      onnxWASMBasePath,
     );
   }
 
   /// Handle an event from the JS side
   void handleEvent(String eventType, String payload) {
     try {
-      final eventData = payload.isNotEmpty
+      final Map<String, dynamic> eventData = payload.isNotEmpty
           ? json.decode(payload) as Map<String, dynamic>
-          : <String, dynamic>{};
+          : {};
 
       switch (eventType) {
         case 'onError':
@@ -172,11 +162,9 @@ class VadHandlerWeb implements VadHandlerBase {
           if (eventData.containsKey('probabilities') &&
               eventData.containsKey('frame')) {
             final double isSpeech =
-                ((eventData['probabilities'] as Map)['isSpeech'] as num)
-                    .toDouble();
+                (eventData['probabilities']['isSpeech'] as num).toDouble();
             final double notSpeech =
-                ((eventData['probabilities'] as Map)['notSpeech'] as num)
-                    .toDouble();
+                (eventData['probabilities']['notSpeech'] as num).toDouble();
             final List<double> frame = (eventData['frame'] as List)
                 .map((e) => (e as num).toDouble())
                 .toList();
@@ -238,31 +226,12 @@ class VadHandlerWeb implements VadHandlerBase {
     }
     stopListeningImpl();
   }
-
-  @override
-  void pauseListening() {
-    if (isDebug) {
-      debugPrint('VadHandlerWeb: pauseListening');
-    }
-    pauseListeningImpl();
-  }
-
-  @override
-  void resumeListening() {
-    if (isDebug) {
-      debugPrint('VadHandlerWeb: resumeListening');
-    }
-    resumeListeningImpl();
-  }
 }
 
-/// Create a VAD handler for the web.
-///
-/// Parameters:
-/// - isDebug: Whether to print debug messages.
-/// - recorder: Not used in the web implementation.
+/// Create a new VAD handler
 VadHandlerBase createVadHandler({
   required bool isDebug,
-  RecorderBase? recorder,
-}) =>
-    VadHandlerWeb(isDebug: isDebug);
+  String modelPath = '',
+}) {
+  return VadHandlerWeb(isDebug: isDebug);
+}

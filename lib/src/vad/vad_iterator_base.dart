@@ -1,7 +1,10 @@
-// VAD iterator base class
-// Adapted from https://github.com/keyur2maru/vad/blob/master/lib/src/vad_iterator_base.dart
-
+// vad_iterator_base.dart
 import 'vad_event.dart';
+
+/// Base class for Voice Activity Detection (VAD) iterator.
+/// Only used for non-web platforms.
+/// It is internally used by the [VadHandlerNonWeb] class.
+/// But it can be used directly for more control over the VAD process. For example, to process non-streaming audio data.
 
 abstract class VadIteratorBase {
   /// Initialize the VAD model from the given [modelPath].
@@ -22,3 +25,6 @@ abstract class VadIteratorBase {
   /// Forcefully end speech detection on pause/stop event.
   void forceEndSpeech();
 }
+
+/// Callback for VAD events.
+typedef VadEventCallback = void Function(VadEvent event);

@@ -1,13 +1,9 @@
-// VAD handler interface
-// Adapted from https://github.com/keyur2maru/vad/blob/master/lib/src/vad_handler_base.dart
+// vad_handler_base.dart
 
 import 'dart:async';
 
 /// Abstract class for VAD handler
 abstract class VadHandlerBase {
-  static const defaultBaseAssetPath = 'packages/agents/assets/';
-  static const defaultOnnxWASMBasePath = 'packages/agents/assets/';
-
   /// Stream of speech end events
   Stream<List<double>> get onSpeechEnd;
 
@@ -33,26 +29,17 @@ abstract class VadHandlerBase {
     double negativeSpeechThreshold = 0.35,
     int preSpeechPadFrames = 1,
     int redemptionFrames = 8,
-    int frameSamples = 512,
+    int frameSamples = 1536,
     int minSpeechFrames = 3,
     bool submitUserSpeechOnPause = false,
-    SileroVADModel model = SileroVADModel.v5,
+    String model = 'legacy',
+    String baseAssetPath = 'assets/packages/agents/assets/',
+    String onnxWASMBasePath = 'assets/packages/agents/assets/',
   });
 
   /// Stop listening for speech events
   void stopListening();
 
-  /// Pause listening for speech events
-  void pauseListening();
-
-  /// Resume listening for speech events
-  void resumeListening();
-
   /// Dispose the VAD handler
   void dispose();
-}
-
-enum SileroVADModel {
-  v4,
-  v5,
 }
