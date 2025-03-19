@@ -316,19 +316,13 @@ final class AgentBase implements Agent {
 
     vadHandler.onFrameProcessed.listen((frame) {
       callbackConfig.onVADFrameProcessed?.call(frame);
-      final ws = this.ws;
-      final player = this.player;
-      if (ws == null) {
-        _log('Skipping VAD frame: WebSocket or player not initialized');
-        return;
-      }
       if (!isConnected) {
         // Skip if agent not ready
         return _log('Skipping VAD frame: agent not connected yet.');
       }
       if (isMuted) {
         // Send keep-alive silence
-        _sendAudioInAsSilence(ws);
+        _sendAudioInAsSilence();
         return;
       }
       final prob = frame.isSpeech;
@@ -350,9 +344,7 @@ final class AgentBase implements Agent {
       // because server wants continuous input.
       final encoded = encodeFloat32FrameToMuLaw(frame.frame);
       final b64 = base64.encode(encoded);
-      final payload = {'type': 'audioIn', 'data': b64};
-      // _log('Sending audioIn => ${payload["data"]?.length} bytes');
-      ws.sink.add(jsonEncode(payload));
+      _sendAudioIn(b64);
     });
     vadHandler.onSpeechStart.listen((_) {
       _log('VAD onSpeechStart');
@@ -510,6 +502,12 @@ final class AgentBase implements Agent {
   // Sending Events from the Client to the Agent
   // ------------------------------------------------------------
 
+  /// Adds a payload to the WebSocket sink if the agent is connected.
+  void _sendPayload(Map<String, dynamic> payload) {
+    if (!isConnected) return;
+    ws?.sink.add(jsonEncode(payload));
+  }
+
   /// Sends {type:'setup'} to the agent.
   void _sendSetupMessage() {
     final setup = <String, dynamic>{
@@ -520,7 +518,7 @@ final class AgentBase implements Agent {
       'outputFormat': 'mulaw',
       'outputSampleRate': 44100,
     };
-    ws?.sink.add(jsonEncode(setup));
+    _sendPayload(setup);
   }
 
   /// Declares the actions that the agent can perform after the setup message.
@@ -530,27 +528,31 @@ final class AgentBase implements Agent {
       'type': 'extendConversationSetup',
       'events': actions.map((e) => e.toAgentInstructions()).toList(),
     };
-    ws?.sink.add(jsonEncode(message));
+    _sendPayload(message);
   }
 
   /// Sends {type:'bufferEmpty'} when the player's buffer is empty.
   void _sendBufferEmptyEvent() {
     final msg = <String, dynamic>{'type': 'bufferEmpty'};
-    debugPrint('Sending bufferEmpty: ${jsonEncode(msg)}');
-    ws?.sink.add(jsonEncode(msg));
+    _sendPayload(msg);
+  }
+
+  /// Sends audioIn payload to the agent.
+  void _sendAudioIn(String data) {
+    final payload = {'type': 'audioIn', 'data': data};
+    _sendPayload(payload);
   }
 
   /// Sends a short base64 mu-law silence chunk if the user is muted.
-  void _sendAudioInAsSilence(WebSocketChannel ws) {
+  void _sendAudioInAsSilence() {
     final payload = {'type': 'audioIn', 'data': base64MuLawDataForSilence};
-    debugPrint('Sending SILENCE: ${payload['data']?.length} bytes');
-    ws.sink.add(jsonEncode(payload));
+    _sendPayload(payload);
   }
 
   /// Sends a custom input to the agent.
   void _sendCustomInput(String data) {
     final message = <String, dynamic>{'type': 'customInput', 'data': data};
-    ws?.sink.add(jsonEncode(message));
+    _sendPayload(message);
   }
 
   @override
