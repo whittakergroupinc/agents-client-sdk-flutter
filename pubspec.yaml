@@ -1,6 +1,6 @@
 name: agents
 description: Voice-powered AI agents made easy. Official Agents SDK for Flutter by PlayAI. The plugin supports iOS, Android, and Web platforms.
-version: 0.0.1
+version: 0.0.1-alpha.1
 homepage: https://play.ai/
 repository: https://github.com/playht/agents-flutter/
 issue_tracker: https://github.com/playht/agents-flutter/issues

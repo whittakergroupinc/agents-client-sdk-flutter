@@ -5,8 +5,8 @@ import 'dart:async';
 
 /// Abstract class for VAD handler
 abstract class VadHandlerBase {
-  static const defaultBaseAssetPath = 'assets/packages/vad/assets/';
-  static const defaultOnnxWASMBasePath = 'assets/packages/vad/assets/';
+  static const defaultBaseAssetPath = 'packages/agents/assets/';
+  static const defaultOnnxWASMBasePath = 'packages/agents/assets/';
 
   /// Stream of speech end events
   Stream<List<double>> get onSpeechEnd;

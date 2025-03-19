@@ -40,10 +40,12 @@ class VadHandlerNonWeb implements VadHandlerBase {
   static const int sampleRate = 16000;
 
   /// Default Silero VAD Legacy (v4) model path (used for non-web)
-  static const String vadLegacyModelPath = 'assets/silero_vad_legacy.onnx';
+  static const String vadLegacyModelPath =
+      'packages/agents/assets/silero_vad_legacy.onnx';
 
   /// Default Silero VAD V5 model path (used for non-web)
-  static const String vadV5ModelPath = 'assets/silero_vad_v5.onnx';
+  static const String vadV5ModelPath =
+      'packages/agents/assets/silero_vad_v5.onnx';
 
   final _onSpeechEndController = StreamController<List<double>>.broadcast();
   final _onFrameProcessedController = StreamController<
