@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:audio_session/audio_session.dart';
+import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import 'audio_session_manager.dart';
@@ -101,6 +104,7 @@ final class AudioSessionManager implements AudioSessionManagerBase {
   }
 
   Future<void> _ensureBluetoothPermissionsOnAndroid() async {
+    if (kIsWeb || !Platform.isAndroid) return;
     var status = await Permission.bluetooth.request();
     if (status.isPermanentlyDenied) {
       throw Exception('Bluetooth Permission disabled');
