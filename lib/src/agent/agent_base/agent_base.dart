@@ -2,7 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../../audio_player/audio_player.dart';
 import '../../audio_session_manager/audio_session_manager.dart';
+import '../../recorder/recorder.dart';
+import '../../vad/vad.dart';
 import '../agent_impl/agent_impl.dart';
 
 part 'agent_action.dart';
@@ -16,6 +19,8 @@ abstract interface class Agent {
     String prompt = 'You are a helpful assistant.',
     List<AgentAction> actions = const [],
     AudioSessionManagerBase? audioSessionManager,
+    RecorderBase? recorder,
+    AudioPlayerBase? player,
     AgentCallbackConfig callbackConfig = const AgentCallbackConfig(),
   }) =>
       AgentBase(
@@ -25,12 +30,18 @@ abstract interface class Agent {
         audioSessionManager:
             audioSessionManager ?? AudioSessionManager.defaultConfig(),
         callbackConfig: callbackConfig,
+        recorder: recorder,
+        player: player,
       );
 
+  String get agentId;
   AgentCallbackConfig get callbackConfig;
   String get prompt;
   List<AgentAction> get actions;
 
+  RecorderBase get recorder;
+  AudioPlayerBase get player;
+  VadHandlerBase get vadHandler;
   AudioSessionManagerBase get audioSessionManager;
 
   ValueListenable<String?> get conversationIdNotifier;

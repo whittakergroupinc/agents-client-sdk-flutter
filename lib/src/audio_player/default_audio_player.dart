@@ -13,7 +13,7 @@ class AudioPlayer implements AudioPlayerBase {
   AudioPlayer({this.onEmptyQueue});
 
   @override
-  final VoidCallback? onEmptyQueue;
+  VoidCallback? onEmptyQueue;
 
   FlutterSoundPlayer? player;
 

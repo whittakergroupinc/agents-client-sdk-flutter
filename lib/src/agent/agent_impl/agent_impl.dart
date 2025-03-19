@@ -21,44 +21,27 @@ part 'vad_events.dart';
 final class AgentBase extends _AgentImpl
     with _AudioSessionEvents, _ClientEvents, _ServerEvents, _VadEvents {
   AgentBase({
-    required this.agentId,
-    required this.prompt,
-    required this.actions,
-    required this.audioSessionManager,
-    required this.callbackConfig,
+    required super.agentId,
+    required super.prompt,
+    required super.actions,
+    required super.audioSessionManager,
+    required super.callbackConfig,
+    required super.recorder,
+    required super.player,
   }) {
     _createVadHandler();
   }
 
-  final String agentId;
-
-  @override
-  final String prompt;
-
-  @override
-  final List<AgentAction> actions;
-
-  @override
-  final AgentCallbackConfig callbackConfig;
-
-  @override
-  final AudioSessionManagerBase audioSessionManager;
-
   @override
   WebSocketChannel? ws;
 
-  @override
-  AudioPlayer? player;
-
   StreamSubscription<bool>? playerSubscription;
 
-  Future<void> _createAudioPlayer() async {
-    assert(player == null, 'Player already created');
-    player = AudioPlayer(onEmptyQueue: _sendBufferEmptyEvent);
-    assert(player != null, 'Failed to create player');
-    await player!.initialize();
+  Future<void> _initializeAudioPlayer() async {
+    player.onEmptyQueue = _sendBufferEmptyEvent;
+    await player.initialize();
     // Listen to player states to detect agent's start/stop speaking
-    playerSubscription = player!.playingStream.listen((isPlaying) {
+    playerSubscription = player.playingStream.listen((isPlaying) {
       if (!isConnected) return;
 
       // onAgentStartedSpeaking
@@ -108,7 +91,7 @@ final class AgentBase extends _AgentImpl
 
     try {
       await _ensureMicrophonePermission();
-      await _createAudioPlayer();
+      await _initializeAudioPlayer();
       await _connectWebSocket();
       _subscribeToServerEvents();
       _sendSetupMessage();
@@ -149,13 +132,15 @@ final class AgentBase extends _AgentImpl
       _log('resetting agent...');
       await ws?.sink.close();
       await wsSubscription?.cancel();
-      await player?.stop();
+      await player.stop();
+      playerSubscription?.cancel();
     } catch (e) {
       _log('Error during reset: $e');
     } finally {
       _log('Agent reset');
       ws = null;
       wsSubscription = null;
+      playerSubscription = null;
     }
   }
 
@@ -168,6 +153,36 @@ final class AgentBase extends _AgentImpl
 }
 
 abstract final class _AgentImpl implements Agent {
+  _AgentImpl({
+    required this.agentId,
+    required this.prompt,
+    required this.actions,
+    required AudioSessionManagerBase? audioSessionManager,
+    required this.callbackConfig,
+    required RecorderBase? recorder,
+    required AudioPlayerBase? player,
+  }) {
+    _audioSessionManager = audioSessionManager;
+    _player = player;
+    _recorder = recorder;
+  }
+
+  @override
+  final String agentId;
+
+  @override
+  final String prompt;
+
+  @override
+  final List<AgentAction> actions;
+
+  @override
+  final AgentCallbackConfig callbackConfig;
+
+  late final AudioSessionManagerBase? _audioSessionManager;
+  late final RecorderBase? _recorder;
+  late final AudioPlayerBase? _player;
+
   @override
   final ValueNotifier<String?> conversationIdNotifier =
       ValueNotifier<String?>(null);

@@ -1,19 +1,23 @@
 part of 'agent_impl.dart';
 
 base mixin _AudioSessionEvents on _AgentImpl {
-  AudioSessionManagerBase get _session => audioSessionManager;
+  @override
+  late final audioSessionManager =
+      _audioSessionManager ?? AudioSessionManager.defaultConfig();
   StreamSubscription<AudioInterruptionEvent>? interruptionSubscription;
   StreamSubscription<AudioDevicesChangedEvent>? devicesSubscription;
 
   Future<bool> _createAudioSession() async {
-    await _session.initialize();
-    interruptionSubscription = _session.interruptionStream.listen((event) {
+    await audioSessionManager.initialize();
+    interruptionSubscription =
+        audioSessionManager.interruptionStream.listen((event) {
       callbackConfig.onAudioSessionInterruption?.call(event);
     });
-    devicesSubscription = _session.devicesChangedStream.listen((event) {
+    devicesSubscription =
+        audioSessionManager.devicesChangedStream.listen((event) {
       callbackConfig.onAudioDevicesChanged?.call(event);
     });
-    return _session.startSession();
+    return audioSessionManager.startSession();
   }
 
   @override
@@ -21,7 +25,7 @@ base mixin _AudioSessionEvents on _AgentImpl {
   Future<void> disconnect() async {
     await super.disconnect();
     try {
-      await _session.stopSession();
+      await audioSessionManager.stopSession();
       interruptionSubscription?.cancel();
       devicesSubscription?.cancel();
     } catch (e) {

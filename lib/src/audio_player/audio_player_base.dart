@@ -15,6 +15,9 @@ abstract interface class AudioPlayerBase {
   /// This can be used to handle scenarios where all audio chunks have been played.
   VoidCallback? get onEmptyQueue;
 
+  /// Sets the callback that is triggered when the audio queue becomes empty.
+  set onEmptyQueue(VoidCallback? value);
+
   /// A stream that emits the current playing state of the audio player.
   ///
   /// Emits `true` when audio is playing, `false` when paused or stopped.

@@ -1,11 +1,15 @@
 part of 'agent_impl.dart';
 
 base mixin _VadEvents on _ServerEvents {
-  late final AudioRecorder audioStreamer = AudioRecorder(
-    onFrameRecorded: callbackConfig.onAudioStreamerFrameRecorded,
-  );
-  late final VadHandlerBase vadHandler =
-      VadHandler.create(isDebug: false, nonWebRecorder: audioStreamer);
+  @override
+  late final recorder = _recorder ??
+      AudioRecorder(
+        onFrameRecorded: callbackConfig.onAudioStreamerFrameRecorded,
+      );
+
+  @override
+  late final vadHandler =
+      VadHandler.create(isDebug: false, nonWebRecorder: recorder);
 
   Timer? _pauseTimer;
 
@@ -31,7 +35,7 @@ base mixin _VadEvents on _ServerEvents {
             isUserSpeakingNotifier.value = false;
             _log('User stopped speaking => resume agent audio');
             callbackConfig.onUserStoppedSpeaking?.call();
-            player?.resume().catchError((Object? err) {
+            player.resume().catchError((Object? err) {
               _log('Error trying to resume audio: $err');
             });
           }
@@ -43,7 +47,7 @@ base mixin _VadEvents on _ServerEvents {
       callbackConfig.onVADFrameProcessed?.call(frame);
       final ws = this.ws;
       final player = this.player;
-      if (ws == null || player == null) {
+      if (ws == null) {
         _log('Skipping VAD frame: WebSocket or player not initialized');
         return;
       }
@@ -100,6 +104,7 @@ base mixin _VadEvents on _ServerEvents {
     try {
       _pauseTimer?.cancel();
       vadHandler.stopListening();
+      await recorder.stopStream();
     } catch (e) {
       rethrow;
     } finally {
@@ -110,7 +115,7 @@ base mixin _VadEvents on _ServerEvents {
   @override
   @mustCallSuper
   Future<void> dispose() async {
-    await audioStreamer.dispose();
+    await recorder.dispose();
     vadHandler.dispose();
     await super.dispose();
   }

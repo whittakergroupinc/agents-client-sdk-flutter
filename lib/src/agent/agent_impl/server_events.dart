@@ -1,7 +1,9 @@
 part of 'agent_impl.dart';
 
 base mixin _ServerEvents on _ClientEvents {
-  AudioPlayer? get player;
+  @override
+  late final AudioPlayerBase player = _player ?? AudioPlayer();
+
   StreamSubscription<dynamic>? wsSubscription;
 
   void _subscribeToServerEvents() {
@@ -30,11 +32,6 @@ base mixin _ServerEvents on _ClientEvents {
   }
 
   Future<void> _handleServerEvent(dynamic rawEvent) async {
-    final player = this.player;
-    if (player == null) {
-      _log('Skipping server event: Player not initialized');
-      return;
-    }
     try {
       final parsed = jsonDecode(rawEvent as String) as Map<String, dynamic>;
       final msgType = parsed['type'] as String?;
@@ -90,7 +87,7 @@ base mixin _ServerEvents on _ClientEvents {
           // agent is about to start streaming new audio
           debugPrint('newAudioStream => resetting player');
           callbackConfig.onAgentAudioStreamStarted?.call();
-          if (player.isPlaying()) {
+          if (await player.isPlaying()) {
             try {
               await player.advance();
               _log('Player buffer reset successfully');
@@ -149,5 +146,13 @@ base mixin _ServerEvents on _ClientEvents {
     await super.disconnect();
     wsSubscription?.cancel();
     wsSubscription = null;
+    await player.stop();
+  }
+
+  @override
+  @mustCallSuper
+  Future<void> dispose() async {
+    if (_player == null) await player.dispose();
+    await super.dispose();
   }
 }
