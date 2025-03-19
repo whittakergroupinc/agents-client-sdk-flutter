@@ -6,6 +6,9 @@ import 'package:logger/logger.dart';
 
 import 'audio_player.dart';
 
+/// The default implementation of [AudioPlayerBase].
+///
+/// Uses [FlutterSoundPlayer] to play PCM16 encoded audio data.
 class AudioPlayer implements AudioPlayerBase {
   AudioPlayer({this.onEmptyQueue});
 
@@ -20,6 +23,10 @@ class AudioPlayer implements AudioPlayerBase {
   @override
   bool isPlaying() => player != null && player!.isOpen() && player!.isPlaying;
 
+  @override
+  Stream<bool> get playingStream =>
+      player?.onProgress?.map((pos) => isPlaying()) ?? Stream.value(false);
+
   Future<void> _startPlayer() =>
       player?.startPlayerFromStream(
         sampleRate: 44100,
@@ -31,18 +38,23 @@ class AudioPlayer implements AudioPlayerBase {
       Future.value();
 
   @override
-  Future<void> advance() async {
-    chunkQueue.clear();
-    feedingInProgress = false;
-    await player?.stopPlayer();
+  Future<void> initialize() async {
+    player = await FlutterSoundPlayer(logLevel: Level.error).openPlayer();
+    await player!.setSubscriptionDuration(const Duration(milliseconds: 100));
     return _startPlayer();
   }
 
   @override
-  Future<void> dispose() async {
-    await player?.closePlayer();
-    player = null;
-    return;
+  Future<void> stop() {
+    chunkQueue.clear();
+    feedingInProgress = false;
+    return player?.stopPlayer() ?? Future.value();
+  }
+
+  @override
+  Future<void> advance() async {
+    await stop();
+    return _startPlayer();
   }
 
   @override
@@ -74,19 +86,15 @@ class AudioPlayer implements AudioPlayerBase {
   }
 
   @override
-  Future<void> init() async {
-    player = await FlutterSoundPlayer(logLevel: Level.error).openPlayer();
-    await player!.setSubscriptionDuration(const Duration(milliseconds: 100));
-    return _startPlayer();
-  }
-
-  @override
   Future<void> pause() => player?.pausePlayer() ?? Future.value();
 
   @override
   Future<void> resume() => player?.resumePlayer() ?? Future.value();
 
   @override
-  Stream<bool> get playingStream =>
-      player?.onProgress?.map((pos) => isPlaying()) ?? Stream.value(false);
+  Future<void> dispose() async {
+    await player?.closePlayer();
+    player = null;
+    return;
+  }
 }
