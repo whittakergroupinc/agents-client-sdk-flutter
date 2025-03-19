@@ -54,7 +54,7 @@ final class AgentBase implements Agent {
   late final AudioSessionManagerBase? _audioSessionManager;
 
   @override
-  late final vadHandler = VadHandler.create(isDebug: callbackConfig.debug);
+  late final vadHandler = VadHandler.create(isDebug: false);
   Timer? _vadPauseTimer;
 
   @override
@@ -106,20 +106,6 @@ final class AgentBase implements Agent {
   }
 
   @override
-  Future<void> mute() async {
-    if (isMuted) return;
-    isMutedNotifier.value = true;
-    _log('User mic muted => sending silence');
-  }
-
-  @override
-  Future<void> unmute() async {
-    if (!isMuted) return;
-    isMutedNotifier.value = false;
-    _log('User mic unmuted');
-  }
-
-  @override
   Future<void> connect() async {
     if (state != AgentState.idle) {
       throw StateError('Cannot connect: Agent is in $state state');
@@ -155,6 +141,20 @@ final class AgentBase implements Agent {
       await disconnect();
       rethrow;
     }
+  }
+
+  @override
+  Future<void> mute() async {
+    if (isMuted) return;
+    isMutedNotifier.value = true;
+    _log('User mic muted => sending silence');
+  }
+
+  @override
+  Future<void> unmute() async {
+    if (!isMuted) return;
+    isMutedNotifier.value = false;
+    _log('User mic unmuted');
   }
 
   @override
