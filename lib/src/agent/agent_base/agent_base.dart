@@ -16,13 +16,14 @@ abstract interface class Agent {
     String prompt = 'You are a helpful assistant.',
     List<AgentAction> actions = const [],
     AudioSessionManagerBase? audioSessionManager,
-    required AgentCallbackConfig callbackConfig,
+    AgentCallbackConfig callbackConfig = const AgentCallbackConfig(),
   }) =>
       AgentBase(
         agentId: agentId,
         prompt: prompt,
         actions: actions,
-        audioSessionManager: audioSessionManager ?? AudioSessionManager(),
+        audioSessionManager:
+            audioSessionManager ?? AudioSessionManager.defaultConfig(),
         callbackConfig: callbackConfig,
       );
 

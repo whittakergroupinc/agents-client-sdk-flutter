@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert' hide Codec;
 
-import 'package:audio_session/audio_session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:web_socket_channel/io.dart';
@@ -57,7 +56,7 @@ final class AgentBase extends _AgentImpl
     assert(player == null, 'Player already created');
     player = AudioPlayer(onEmptyQueue: _sendBufferEmptyEvent);
     assert(player != null, 'Failed to create player');
-    await player!.init();
+    await player!.initialize();
     // Listen to player states to detect agent's start/stop speaking
     playerSubscription = player!.playingStream.listen((isPlaying) {
       if (!isConnected) return;
@@ -150,16 +149,13 @@ final class AgentBase extends _AgentImpl
       _log('resetting agent...');
       await ws?.sink.close();
       await wsSubscription?.cancel();
-      await player?.dispose();
-      await playerSubscription?.cancel();
+      await player?.stop();
     } catch (e) {
       _log('Error during reset: $e');
     } finally {
       _log('Agent reset');
       ws = null;
       wsSubscription = null;
-      player = null;
-      playerSubscription = null;
     }
   }
 
