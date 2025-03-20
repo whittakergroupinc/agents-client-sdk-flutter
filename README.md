@@ -182,20 +182,20 @@ final agent = Agent(
 ### 3. Connect the Agent to Start a Conversation
 
 ```dart
-await _agent.connect();
+await agent.connect();
 ```
 
 ### 4. Mute and Unmute the User during a Conversation
 
 ```dart
-await _agent.muteUser();
-await _agent.unmuteUser();
+await agent.muteUser();
+await agent.unmuteUser();
 ```
 
 ### 5. Disconnect the Agent
 
 ```dart
-await _agent.disconnect();
+await agent.disconnect();
 ```
 
 ## 🧩 Key Features
