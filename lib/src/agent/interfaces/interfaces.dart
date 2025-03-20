@@ -284,7 +284,7 @@ abstract interface class Agent {
   ///     builder: (context, isMuted, child) {
   ///       return IconButton(
   ///         icon: Icon(isMuted ? Icons.mic_off : Icons.mic),
-  ///         onPressed: () => isMuted ? agent.unmute() : agent.mute(),
+  ///         onPressed: () => isMuted ? agent.unmuteUser() : agent.muteUser(),
   ///       );
   ///     },
   ///   );

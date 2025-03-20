@@ -188,8 +188,8 @@ await _agent.connect();
 ### 4. Mute and Unmute the User during a Conversation
 
 ```dart
-await _agent.mute();
-await _agent.unmute();
+await _agent.muteUser();
+await _agent.unmuteUser();
 ```
 
 ### 5. Disconnect the Agent
@@ -318,7 +318,7 @@ ValueListenableBuilder<bool>(
   valueListenable: agent.isMutedNotifier,
   builder: (context, isMuted, _) => IconButton(
     icon: Icon(isMuted ? Icons.mic_off : Icons.mic),
-    onPressed: () => isMuted ? agent.unmute() : agent.mute(),
+    onPressed: () => isMuted ? agent.unmuteUser() : agent.muteUser(),
     tooltip: isMuted ? 'Unmute' : 'Mute',
   ),
 )
