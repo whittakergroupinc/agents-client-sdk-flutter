@@ -15,6 +15,34 @@ Voice-powered AI agents made easy. The official Agents Client SDK for Flutter by
 - 📝 **Real-time transcripts** of both user and agent speech
 - 🚦 **Rich state management** with ValueNotifiers for UI integration
 
+## 📑 Table of Contents
+
+- [Features](#-features)
+- [Installation](#-installation)
+  - [Platform Configuration](#platform-configuration)
+    - [iOS](#ios)
+    - [Android](#android)
+    - [Web](#web)
+- [Getting Started](#-getting-started)
+  - [1. Create an Agent on PlayAI](#1-create-an-agent-on-playai)
+  - [2. Implement the Agent in Your Flutter App](#2-implement-the-agent-in-your-flutter-app)
+  - [3. Connect the Agent to Start a Conversation](#3-connect-the-agent-to-start-a-conversation)
+  - [4. Mute and Unmute the User during a Conversation](#4-mute-and-unmute-the-user-during-a-conversation)
+  - [5. Disconnect the Agent](#5-disconnect-the-agent)
+- [Key Features](#-key-features)
+  - [Monitor the Agent's State](#monitor-the-agents-state)
+  - [Agent Actions](#agent-actions)
+  - [Developer Messages](#developer-messages)
+- [Error Handling](#️-error-handling)
+- [Lifecycle Management](#-lifecycle-management)
+- [UI Integration Examples](#-ui-integration-examples)
+  - [Mute Button](#mute-button)
+  - [Speaking Indicator](#speaking-indicator)
+- [Tips for Effective Usage](#-tips-for-effective-usage)
+- [License](#-license)
+- [Acknowledgments](#-acknowledgments)
+
+
 ## 📦 Installation
 
 Add the package to your `pubspec.yaml`:
