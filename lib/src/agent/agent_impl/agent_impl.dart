@@ -108,7 +108,7 @@ final class AgentBase implements Agent {
   @override
   Future<void> connect() async {
     if (state != AgentState.idle) {
-      throw StateError('Cannot connect: Agent is in $state state');
+      throw InvalidAgentState(state, 'connect');
     }
 
     stateNotifier.value = AgentState.connecting;
@@ -130,7 +130,7 @@ final class AgentBase implements Agent {
       );
 
       if (!canStartSession) {
-        throw Exception('Failed to create audio session');
+        throw const AudioSessionError('Failed to start audio session');
       }
 
       stateNotifier.value = AgentState.connected;
@@ -139,19 +139,22 @@ final class AgentBase implements Agent {
     } catch (e) {
       _log('Error during connect: $e');
       await disconnect();
-      rethrow;
+      if (e is AgentException) {
+        rethrow;
+      }
+      throw WebSocketConnectionError(e.toString());
     }
   }
 
   @override
-  Future<void> mute() async {
+  Future<void> muteUser() async {
     if (isMuted) return;
     isMutedNotifier.value = true;
     _log('User mic muted => sending silence');
   }
 
   @override
-  Future<void> unmute() async {
+  Future<void> unmuteUser() async {
     if (!isMuted) return;
     isMutedNotifier.value = false;
     _log('User mic unmuted');
@@ -241,27 +244,40 @@ final class AgentBase implements Agent {
   }
 
   Future<void> _initializeAudioPlayer() async {
-    player.onEmptyQueue = _sendBufferEmptyEvent;
-    await player.initialize();
-    // Listen to player states to detect agent's start/stop speaking
-    playerSubscription = player.playingStream.listen((isPlaying) {
-      if (!isConnected) return;
+    try {
+      player.onEmptyQueue = _sendBufferEmptyEvent;
+      await player.initialize();
+      // Listen to player states to detect agent's start/stop speaking
+      playerSubscription = player.playingStream.listen(
+        (isPlaying) {
+          if (!isConnected) return;
 
-      // onAgentStartedSpeaking
-      if (isPlaying && !isAgentSpeaking) {
-        isAgentSpeakingNotifier.value = true;
-        _log('Agent started speaking (playing audio)');
-        callbackConfig.onAgentStartedSpeaking?.call();
-      }
+          // onAgentStartedSpeaking
+          if (isPlaying && !isAgentSpeaking) {
+            isAgentSpeakingNotifier.value = true;
+            _log('Agent started speaking (playing audio)');
+            callbackConfig.onAgentStartedSpeaking?.call();
+          }
 
-      // onAgentStoppedSpeaking
-      if (!isPlaying && isAgentSpeaking) {
-        isAgentSpeakingNotifier.value = false;
-        _log('Agent stopped speaking');
-        callbackConfig.onAgentStoppedSpeaking?.call();
+          // onAgentStoppedSpeaking
+          if (!isPlaying && isAgentSpeaking) {
+            isAgentSpeakingNotifier.value = false;
+            _log('Agent stopped speaking');
+            callbackConfig.onAgentStoppedSpeaking?.call();
+          }
+        },
+        onError: (Object error) {
+          _log('Audio player error: $error');
+          throw AudioPlayerError(error.toString());
+        },
+      );
+    } catch (e) {
+      _log('Failed to initialize audio player: $e');
+      if (e is AgentException) {
+        rethrow;
       }
-    });
-    return;
+      throw AudioPlayerError(e.toString());
+    }
   }
 
   Future<void> _connectWebSocket() async {
@@ -276,7 +292,7 @@ final class AgentBase implements Agent {
       _log('WebSocket connected');
     } catch (e) {
       _log('Failed to connect WebSocket: $e');
-      rethrow;
+      throw WebSocketConnectionError(e.toString());
     }
   }
 
@@ -288,7 +304,7 @@ final class AgentBase implements Agent {
     final permissionStatus = await Permission.microphone.request();
     _log('Microphone permission: $permissionStatus');
     if (!permissionStatus.isGranted) {
-      throw Exception('Microphone permission not granted!');
+      throw const MicrophonePermissionDenied();
     }
   }
 
@@ -314,38 +330,54 @@ final class AgentBase implements Agent {
       );
     }
 
-    vadHandler.onFrameProcessed.listen((frame) {
-      callbackConfig.onVADFrameProcessed?.call(frame);
-      if (!isConnected) {
-        // Skip if agent not ready
-        return _log('Skipping VAD frame: agent not connected yet.');
-      }
-      if (isMuted) {
-        // Send keep-alive silence
-        _sendAudioInAsSilence();
-        return;
-      }
-      final prob = frame.isSpeech;
-      if (prob > defaultVadThreshold) {
-        if (!isUserSpeaking) {
-          isUserSpeakingNotifier.value = true;
-          _log('User started speaking => pause agent audio');
-          callbackConfig.onUserStartedSpeaking?.call();
-          // Immediately pause agent playback so they don't talk over each other
-          player.pause().catchError((Object? err) {
-            _log('Error pausing agent audio: $err');
-          });
-        }
-        // Reset the "stop speaking" countdown
-        resetPauseTimer();
-      }
+    vadHandler.onFrameProcessed.listen(
+      (frame) {
+        try {
+          callbackConfig.onVADFrameProcessed?.call(frame);
+          if (!isConnected) {
+            // Skip if agent not ready
+            return _log('Skipping VAD frame: agent not connected yet.');
+          }
+          if (isMuted) {
+            // Send keep-alive silence
+            _sendAudioInAsSilence();
+            return;
+          }
+          final prob = frame.isSpeech;
+          if (prob > defaultVadThreshold) {
+            if (!isUserSpeaking) {
+              isUserSpeakingNotifier.value = true;
+              _log('User started speaking => pause agent audio');
+              callbackConfig.onUserStartedSpeaking?.call();
+              // Immediately pause agent playback so they don't talk over each other
+              player.pause().catchError((Object? err) {
+                _log('Error pausing agent audio: $err');
+                throw AudioPlayerError(err.toString());
+              });
+            }
+            // Reset the "stop speaking" countdown
+            resetPauseTimer();
+          }
 
-      // Always send frames, even if prob < threshold,
-      // because server wants continuous input.
-      final encoded = encodeFloat32FrameToMuLaw(frame.frame);
-      final b64 = base64.encode(encoded);
-      _sendAudioIn(b64);
-    });
+          // Always send frames, even if prob < threshold,
+          // because server wants continuous input.
+          final encoded = encodeFloat32FrameToMuLaw(frame.frame);
+          final b64 = base64.encode(encoded);
+          _sendAudioIn(b64);
+        } catch (e) {
+          _log('Error processing VAD frame: $e');
+          if (e is AgentException) {
+            rethrow;
+          }
+          throw VadProcessingError(e.toString());
+        }
+      },
+      onError: (Object error) {
+        _log('VAD error: $error');
+        callbackConfig.onError?.call('VAD error: $error', false);
+        throw VadProcessingError(error.toString());
+      },
+    );
     vadHandler.onSpeechStart.listen((_) {
       _log('VAD onSpeechStart');
       callbackConfig.onVADSpeechStart?.call();
@@ -476,12 +508,20 @@ final class AgentBase implements Agent {
           final code = parsed['code'] ?? 'unknown';
           final message = parsed['message'] as String? ?? 'unknown error';
           _log('Got error => $message (code:$code, fatal:$isFatal)');
-          callbackConfig.onError?.call('$message (code:$code)', isFatal);
+
+          final error = ServerError(
+            code: code.toString(),
+            message: message,
+            isFatal: isFatal,
+          );
+
+          callbackConfig.onError?.call(error.readableMessage, error.isFatal);
           if (isFatal) {
             _log('Fatal => cleaning up...');
-            disconnect();
+            await disconnect();
             callbackConfig.onHangup?.call(HangUpReason.error);
           }
+          throw error;
 
         case 'hangup':
           // agent ended the conversation
@@ -495,6 +535,14 @@ final class AgentBase implements Agent {
     } catch (e, st) {
       _log('Error parsing server event: $e\n$st');
       callbackConfig.onError?.call('Parsing server event: $e', false);
+      if (e is AgentException) {
+        rethrow;
+      }
+      throw ServerError(
+        code: 'parse_error',
+        message: 'Failed to parse server event: $e',
+        isFatal: false,
+      );
     }
   }
 
@@ -504,8 +552,15 @@ final class AgentBase implements Agent {
 
   /// Adds a payload to the WebSocket sink if the agent is connected.
   void _sendPayload(Map<String, dynamic> payload) {
-    if (!isConnected) return;
-    ws?.sink.add(jsonEncode(payload));
+    if (!isConnected) {
+      throw const NoConversationInProgress();
+    }
+    try {
+      ws?.sink.add(jsonEncode(payload));
+    } catch (e) {
+      _log('Error sending payload: $e');
+      throw WebSocketConnectionError(e.toString());
+    }
   }
 
   /// Sends {type:'setup'} to the agent.
@@ -557,6 +612,9 @@ final class AgentBase implements Agent {
 
   @override
   Future<void> sendDeveloperMessage(String message) async {
+    if (!isConnected) {
+      throw const NoConversationInProgress();
+    }
     _log('Sending developer message to agent: $message');
     _sendCustomInput(message);
   }

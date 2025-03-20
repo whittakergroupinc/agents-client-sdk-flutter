@@ -4,6 +4,7 @@ import 'package:audio_session/audio_session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../exceptions/exceptions.dart';
 import 'audio_session_manager.dart';
 
 /// Default implementation of [AudioSessionManagerBase] that provides audio session management
@@ -107,11 +108,11 @@ final class AudioSessionManager implements AudioSessionManagerBase {
     if (kIsWeb || !Platform.isAndroid) return;
     var status = await Permission.bluetooth.request();
     if (status.isPermanentlyDenied) {
-      throw Exception('Bluetooth Permission disabled');
+      throw const BluetoothPermissionDenied();
     }
     status = await Permission.bluetoothConnect.request();
     if (status.isPermanentlyDenied) {
-      throw Exception('Bluetooth Connect Permission disabled');
+      throw const BluetoothPermissionDenied();
     }
   }
 
