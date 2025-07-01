@@ -573,6 +573,7 @@ final class AgentBase implements Agent {
       'outputFormat': 'mulaw',
       'outputSampleRate': 44100,
     };
+    print('[AGENT:_sendSetupMessage()] $setup');
     _sendPayload(setup);
   }
 
