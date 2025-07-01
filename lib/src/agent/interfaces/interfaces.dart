@@ -133,6 +133,7 @@ abstract interface class Agent {
     String baseUrl = 'wss://api.play.ai',
     required String agentId,
     String prompt = 'You are a helpful assistant.',
+    String criticalKnowledge = '',
     List<AgentAction> actions = const [],
     AudioSessionManagerBase? audioSessionManager,
     AudioPlayerBase? player,
@@ -142,6 +143,7 @@ abstract interface class Agent {
         baseUrl: baseUrl,
         agentId: agentId,
         prompt: prompt,
+        criticalKnowledge: criticalKnowledge,
         actions: actions,
         audioSessionManager:
             audioSessionManager ?? AudioSessionManager.defaultConfig(),
@@ -204,6 +206,9 @@ abstract interface class Agent {
   ///   ),
   /// ]
   /// ```
+
+  String get criticalKnowledge;
+  
   List<AgentAction> get actions;
 
   /// The audio player responsible for playing the agent's voice.
