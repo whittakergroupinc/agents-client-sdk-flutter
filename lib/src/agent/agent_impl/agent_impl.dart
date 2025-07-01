@@ -17,6 +17,7 @@ final class AgentBase implements Agent {
     required this.baseUrl,
     required this.agentId,
     required this.prompt,
+    required this.criticalKnowledge,
     required this.actions,
     required AudioSessionManagerBase? audioSessionManager,
     required this.callbackConfig,
@@ -35,6 +36,9 @@ final class AgentBase implements Agent {
 
   @override
   final String prompt;
+
+  @override
+  final String criticalKnowledge;
 
   @override
   final List<AgentAction> actions;
