@@ -552,9 +552,9 @@ final class AgentBase implements Agent {
 
   /// Adds a payload to the WebSocket sink if the agent is connected.
   void _sendPayload(Map<String, dynamic> payload) {
-    if (!isConnected) {
-      throw const NoConversationInProgress();
-    }
+    // if (!isConnected) {
+    //   throw const NoConversationInProgress();
+    // }
     try {
       ws?.sink.add(jsonEncode(payload));
     } catch (e) {
