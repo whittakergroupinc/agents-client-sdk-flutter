@@ -567,7 +567,7 @@ final class AgentBase implements Agent {
   void _sendSetupMessage() {
     final setup = <String, dynamic>{
       'type': 'setup',
-      'prompt': prompt,
+      // 'prompt': prompt,
       'inputEncoding': 'mulaw',
       'inputSampleRate': 16000,
       'outputFormat': 'mulaw',
